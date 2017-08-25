@@ -207,6 +207,89 @@ namespace OpenHardwareMonitor.Hardware.Nvidia {
     public string Adapter;
   }
 
+  /*********************************************************/
+  #region PS20
+
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPState20ParamDelta
+  {
+    public int Value;
+    public int MinDelta;
+    public int MaxDelta;
+  }
+
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPState20FreqRange
+  {
+    public uint MinFreq_kHz;
+    public uint MaxFreq_kHz;
+    public uint DomainId;
+    public uint MinVoltage_uV;
+    public uint MaxVoltage_uV;
+  }
+
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPState20ClockEntryV1
+  {
+    public uint DomainId;
+    public uint TypeId;
+    public uint BIsEditable;
+    public uint Reserved;
+    public NvPerfPState20ParamDelta FreqDelta_kHz;
+    //
+    [FieldOffset(0)] 
+    public uint DataSingleFreq_kHz;
+    [FieldOffset(0)] 
+    public NvPerfPState20FreqRange DataRange;
+  }
+
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPState20CBaseVoltageEntryV1
+  {
+    public uint DomainId;
+    public uint BIsEditable;
+    public uint Reserved;
+    public uint Volt_uV;
+    public int VoltDelta_uV;
+  }
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPState20Device
+  {
+    public uint Version;
+    public uint BIsEditable;
+    public uint Reserved;
+    public uint NumPstates;
+    public uint NumClocks;
+    public uint NumBaseVoltages;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+    public NvPerfPState20ClockEntryV1[] Clocks;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+    public NvPerfPState20CBaseVoltageEntryV1[] BaseVoltages;
+
+  }
+
+  [StructLayout(LayoutKind.Sequential, Pack = 8)]
+  internal struct NvPerfPStates20InfoV1
+  {
+    public uint Version;
+    public uint BIsEditable;
+    public uint Reserved; //31
+    public uint NumPstates;
+    public uint NumClocks;
+    public uint NumBaseVoltages;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+    public NvPerfPState20Device[] PStates;
+
+  }
+
+  #endregion
+
+
   internal class NVAPI {
 
     public const int MAX_PHYSICAL_GPUS = 64;
@@ -255,8 +338,13 @@ namespace OpenHardwareMonitor.Hardware.Nvidia {
       NvPhysicalGpuHandle gpuHandle, out int value);
     public delegate NvStatus NvAPI_GPU_GetAllClocksDelegate(
       NvPhysicalGpuHandle gpuHandle, ref NvClocks nvClocks);
-    public delegate NvStatus NvAPI_GPU_GetPStatesDelegate(
-      NvPhysicalGpuHandle gpuHandle, ref NvPStates nvPStates);
+
+    public delegate NvStatus NvAPI_GPU_GetPStatesDelegate(NvPhysicalGpuHandle gpuHandle, ref NvPStates nvPStates);
+
+
+    public delegate NvStatus NvAPI_GPU_SetPStatesDelegate(NvPhysicalGpuHandle gpuHandle, ref NvPStates nvPStates);
+
+
     public delegate NvStatus NvAPI_GPU_GetUsagesDelegate(
       NvPhysicalGpuHandle gpuHandle, ref NvUsages nvUsages);
     public delegate NvStatus NvAPI_GPU_GetCoolerSettingsDelegate(
@@ -296,8 +384,13 @@ namespace OpenHardwareMonitor.Hardware.Nvidia {
       NvAPI_GPU_GetTachReading;
     public static readonly NvAPI_GPU_GetAllClocksDelegate
       NvAPI_GPU_GetAllClocks;
+
     public static readonly NvAPI_GPU_GetPStatesDelegate
       NvAPI_GPU_GetPStates;
+
+    public static readonly NvAPI_GPU_SetPStatesDelegate
+      NvAPI_GPU_SetPStates20;
+
     public static readonly NvAPI_GPU_GetUsagesDelegate
       NvAPI_GPU_GetUsages;
     public static readonly NvAPI_GPU_GetCoolerSettingsDelegate
@@ -376,8 +469,11 @@ namespace OpenHardwareMonitor.Hardware.Nvidia {
         GetDelegate(0x34EF9506, out NvAPI_GetPhysicalGPUsFromDisplay);
         GetDelegate(0xE5AC921F, out NvAPI_EnumPhysicalGPUs);
         GetDelegate(0x5F608315, out NvAPI_GPU_GetTachReading);
-        GetDelegate(0x1BD69F49, out NvAPI_GPU_GetAllClocks);
+        GetDelegate(0x0F4DAE6B, out NvAPI_GPU_GetAllClocks);
+        
         GetDelegate(0x60DED2ED, out NvAPI_GPU_GetPStates);
+        GetDelegate(0x0F4DAE6B, out NvAPI_GPU_SetPStates20);
+
         GetDelegate(0x189A1FDF, out NvAPI_GPU_GetUsages);
         GetDelegate(0xDA141340, out NvAPI_GPU_GetCoolerSettings);
         GetDelegate(0x891FA0AE, out NvAPI_GPU_SetCoolerLevels);
@@ -385,6 +481,7 @@ namespace OpenHardwareMonitor.Hardware.Nvidia {
         GetDelegate(0xF951A4D1, out NvAPI_GetDisplayDriverVersion);
         GetDelegate(0x01053FA5, out _NvAPI_GetInterfaceVersionString);
         GetDelegate(0x2DDFB66E, out NvAPI_GPU_GetPCIIdentifiers);
+
 
         available = true;
       }
